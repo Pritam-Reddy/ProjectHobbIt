@@ -47,7 +47,7 @@ const AuthModal = ({ isOpen, onClose }) => {
       onClose();
     } catch (err) {
       console.error(err);
-      if (err.code === 'auth/email-already-in-use') setError("That email is already taken.");
+      if (err.code === 'auth/email-already-in-use') setError("Email is already taken.");
       else if (err.code === 'auth/wrong-password') setError("Incorrect password.");
       else if (err.code === 'auth/user-not-found') setError("No account found with this email.");
       else if (err.code === 'auth/weak-password') setError("Password should be at least 6 characters.");
@@ -104,7 +104,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                   <User className="absolute left-3 top-3 text-slate-400" size={18} />
                   <input 
                     type="text" 
-                    placeholder="John Doe" 
+                    placeholder="Your Name" 
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     required
@@ -120,7 +120,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                 <Mail className="absolute left-3 top-3 text-slate-400" size={18} />
                 <input 
                   type="email" 
-                  placeholder="you@example.com" 
+                  placeholder="your.email@gmail.com" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

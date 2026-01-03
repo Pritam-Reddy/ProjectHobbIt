@@ -3,20 +3,13 @@ import {
   LineChart, Line, XAxis, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell 
 } from 'recharts';
-import { 
-  format, 
-  startOfYear, 
-  endOfYear, 
-  eachDayOfInterval, 
-  isSameYear 
-} from 'date-fns';
+import { format, startOfYear, endOfYear, eachDayOfInterval, isSameYear } from 'date-fns';
 import { TrendingUp, ArrowRight, BarChart2, Calendar, ChevronDown, Flame, CheckCircle2 } from 'lucide-react';
 import YearlyHeatmap from './YearlyHeatmap';
 
 const Dashboard = ({ habits, allChecks, daysInMonth, darkMode }) => {
   const [selectedHabitId, setSelectedHabitId] = useState(null);
   
-  // HEATMAP YEAR STATE
   const currentYear = new Date().getFullYear();
   const [heatmapYear, setHeatmapYear] = useState(currentYear);
   const years = [currentYear, currentYear - 1, currentYear - 2]; 
@@ -32,13 +25,10 @@ const Dashboard = ({ habits, allChecks, daysInMonth, darkMode }) => {
       let dayChecks = 0;
       let dayPossible = 0;
 
-      const habitsToProcess = selectedHabitId 
-        ? habits.filter(h => h.id === selectedHabitId) 
-        : habits;
+      const habitsToProcess = selectedHabitId ? habits.filter(h => h.id === selectedHabitId) : habits;
 
       habitsToProcess.forEach(habit => {
         if (habit.frequency && !habit.frequency.includes(dayName)) return;
-
         const habitData = allChecks[habit.id] || { main: [], subs: {}, values: {}, subValues: {} };
         const hasSubHabits = habit.subHabits && habit.subHabits.length > 0;
         
@@ -65,11 +55,7 @@ const Dashboard = ({ habits, allChecks, daysInMonth, darkMode }) => {
       totalPossibleGlobal += dayPossible;
       totalCheckedGlobal += dayChecks;
 
-      return {
-        date: format(day, 'd'),
-        fullDate: dateStr,
-        completion: dayPossible > 0 ? Math.round((dayChecks / dayPossible) * 100) : 0
-      };
+      return { date: format(day, 'd'), completion: dayPossible > 0 ? Math.round((dayChecks / dayPossible) * 100) : 0 };
     });
 
     const overallRate = totalPossibleGlobal > 0 ? Math.round((totalCheckedGlobal / totalPossibleGlobal) * 100) : 0;
@@ -79,29 +65,23 @@ const Dashboard = ({ habits, allChecks, daysInMonth, darkMode }) => {
   const { data: dailyData, overallRate } = getGraphData();
   const pieData = [{ name: 'Done', value: overallRate }, { name: 'Left', value: 100 - overallRate }];
 
-  // --- 2. CALCULATE YEARLY HIGHLIGHTS (FILL THE GAP) ---
+  // --- 2. CALCULATE YEARLY HIGHLIGHTS ---
   const yearlyStats = useMemo(() => {
     const start = startOfYear(new Date(heatmapYear, 0, 1));
     const end = endOfYear(new Date(heatmapYear, 0, 1));
-    // Limit end to today if current year
     const today = new Date();
     const effectiveEnd = isSameYear(end, today) && end > today ? today : end;
     
     const days = eachDayOfInterval({ start, end: effectiveEnd });
-
-    let activeDays = 0;
-    let maxStreak = 0;
-    let currentStreak = 0;
+    let activeDays = 0; let maxStreak = 0; let currentStreak = 0;
 
     days.forEach(day => {
       const dateStr = format(day, 'yyyy-MM-dd');
       const dayName = format(day, 'EEE');
       let isDayActive = false;
 
-      // Check if ANY habit was done on this day
       for (const habit of habits) {
         if (habit.frequency && !habit.frequency.includes(dayName)) continue;
-        
         const habitData = allChecks[habit.id] || { main: [], subs: {}, values: {}, subValues: {} };
         const hasSubHabits = habit.subHabits && habit.subHabits.length > 0;
 
@@ -126,10 +106,8 @@ const Dashboard = ({ habits, allChecks, daysInMonth, darkMode }) => {
         currentStreak = 0;
       }
     });
-
     return { activeDays, maxStreak };
   }, [habits, allChecks, heatmapYear]);
-
 
   // --- 3. HABIT RANKING ---
   const habitPerformance = habits.map(habit => {
@@ -157,27 +135,24 @@ const Dashboard = ({ habits, allChecks, daysInMonth, darkMode }) => {
   }).sort((a, b) => b.score - a.score); 
 
   const selectedHabitName = habits.find(h => h.id === selectedHabitId)?.name || "Global Consistency";
-  
-  const tooltipStyle = darkMode 
-    ? { borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', backgroundColor: '#1e293b', color: '#fff' }
-    : { borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', backgroundColor: '#fff', color: '#1e293b' };
+  const tooltipStyle = darkMode ? { borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', backgroundColor: '#1e293b', color: '#fff' } : { borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', backgroundColor: '#fff', color: '#1e293b' };
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-6 animate-in slide-in-from-top-4 duration-500 transition-colors">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4 md:p-6 animate-in slide-in-from-top-4 duration-500 transition-colors">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
         
         {/* 1. OVERALL PROGRESS */}
         <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center relative overflow-hidden transition-colors">
            {selectedHabitId && <div className="absolute top-2 right-2 text-[10px] font-bold bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 px-2 py-1 rounded">FILTER ACTIVE</div>}
            <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-4">Completion Rate</h3>
-           <div className="relative w-32 h-32">
+           <div className="relative w-28 h-28 md:w-32 md:h-32">
              <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={pieData} innerRadius={35} outerRadius={50} dataKey="value" stroke="none"><Cell fill="#2563eb" /><Cell fill={darkMode ? '#334155' : '#f1f5f9'} stroke="none" /></Pie></PieChart></ResponsiveContainer>
-             <div className="absolute inset-0 flex items-center justify-center text-2xl font-bold text-slate-700 dark:text-white">{overallRate}%</div>
+             <div className="absolute inset-0 flex items-center justify-center text-xl md:text-2xl font-bold text-slate-700 dark:text-white">{overallRate}%</div>
            </div>
         </div>
 
         {/* 2. CONSISTENCY CHART */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 col-span-2 transition-colors">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 col-span-1 md:col-span-2 transition-colors">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2"><TrendingUp size={14} /> {selectedHabitName}</h3>
             {selectedHabitId && <button onClick={() => setSelectedHabitId(null)} className="text-[10px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:underline">CLEAR FILTER</button>}
@@ -188,7 +163,7 @@ const Dashboard = ({ habits, allChecks, daysInMonth, darkMode }) => {
         </div>
 
         {/* 3. HABIT LIST */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col h-full max-h-[220px] transition-colors">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col h-[200px] md:h-auto md:max-h-[220px] transition-colors">
           <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-3 shrink-0">Habit Performance</h3>
           <div className="space-y-2 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent flex-1">
             {habitPerformance.map((h, i) => (
@@ -205,29 +180,23 @@ const Dashboard = ({ habits, allChecks, daysInMonth, darkMode }) => {
         </div>
 
         {/* 4. HEATMAP SECTION */}
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 col-span-1 md:col-span-4 transition-colors">
+        <div className="bg-white dark:bg-slate-900 p-4 md:p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 col-span-1 md:col-span-4 transition-colors">
            
-           {/* HEADER ROW - NOW WITH STATS FILLING THE GAP */}
-           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-             
-             {/* LEFT: TITLE */}
+           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3">
              <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
                <Calendar size={14} /> Year View
              </h3>
 
-             {/* CENTER: THE GAP FILLER (STATS) */}
-             <div className="flex-1 flex items-center gap-2 md:gap-6 px-4">
-                {/* Active Days Pill */}
-                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+             {/* STATS FILLER (Mobile Responsive) */}
+             <div className="flex flex-wrap items-center gap-2 md:gap-4 flex-1 w-full md:w-auto">
+                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 flex-1 md:flex-none justify-center">
                    <CheckCircle2 size={14} className="text-green-500" />
                    <div className="flex flex-col">
                       <span className="text-[10px] font-bold text-slate-400 uppercase leading-none">Active</span>
                       <span className="text-sm font-bold text-slate-700 dark:text-slate-200 leading-none">{yearlyStats.activeDays} Days</span>
                    </div>
                 </div>
-
-                {/* Streak Pill */}
-                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 flex-1 md:flex-none justify-center">
                    <Flame size={14} className="text-orange-500" fill="currentColor" />
                    <div className="flex flex-col">
                       <span className="text-[10px] font-bold text-slate-400 uppercase leading-none">Max Streak</span>
@@ -236,12 +205,12 @@ const Dashboard = ({ habits, allChecks, daysInMonth, darkMode }) => {
                 </div>
              </div>
              
-             {/* RIGHT: YEAR DROPDOWN */}
-             <div className="relative group shrink-0">
-                <button className="flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700">
+             {/* YEAR DROPDOWN */}
+             <div className="relative group shrink-0 w-full md:w-auto mt-2 md:mt-0">
+                <button className="w-full md:w-auto flex items-center justify-between gap-1 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700">
                   {heatmapYear} <ChevronDown size={12} />
                 </button>
-                <div className="absolute right-0 top-full mt-1 w-24 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl overflow-hidden z-50 hidden group-hover:block">
+                <div className="absolute right-0 top-full mt-1 w-full md:w-24 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl overflow-hidden z-50 hidden group-hover:block">
                   {years.map(y => (
                     <button key={y} onClick={() => setHeatmapYear(y)} className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700 ${heatmapYear === y ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20' : 'text-slate-600 dark:text-slate-300'}`}>
                       {y}

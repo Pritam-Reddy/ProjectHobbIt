@@ -15,17 +15,14 @@ const HabitRow = ({ habit, days, onAddSubHabit, onDelete, checks, onToggleGlobal
   const hasSubHabits = habit.subHabits && habit.subHabits.length > 0;
   const isQuantitative = habit.goal > 0;
 
-  // --- PROGRESS CALCULATION ---
   const getDailyProgress = (dateStr) => {
     if (isQuantitative) {
        const val = checks.values ? (checks.values[dateStr] || 0) : 0;
        return Math.min(100, Math.round((val / habit.goal) * 100));
     }
-    
     if (!hasSubHabits) return checks.main.includes(dateStr) ? 100 : 0;
     
     let totalSubCompletion = 0;
-    
     habit.subHabits.forEach(sub => {
       if (sub.goal > 0) {
         const val = checks.subValues?.[sub.id]?.[dateStr] || 0;
@@ -39,7 +36,6 @@ const HabitRow = ({ habit, days, onAddSubHabit, onDelete, checks, onToggleGlobal
     return Math.round((totalSubCompletion / habit.subHabits.length) * 100);
   };
 
-  // --- ROW PROGRESS BAR ---
   let totalPossiblePoints = 0;
   let totalEarnedPoints = 0;
 
@@ -53,12 +49,9 @@ const HabitRow = ({ habit, days, onAddSubHabit, onDelete, checks, onToggleGlobal
   
   const rowProgress = totalPossiblePoints > 0 ? Math.round((totalEarnedPoints / totalPossiblePoints) * 100) : 0;
 
-
-  // --- STREAK CALCULATION ---
   const calculateStreak = () => {
     let streak = 0;
     let currentDay = new Date();
-    
     const todayStr = format(currentDay, 'yyyy-MM-dd');
     const todayProgress = getDailyProgress(todayStr);
     
@@ -124,7 +117,8 @@ const HabitRow = ({ habit, days, onAddSubHabit, onDelete, checks, onToggleGlobal
   };
 
   const handleRightClick = (e, day) => {
-    e.preventDefault();
+    e.preventDefault(); // IMPORTANT: Stops the context menu
+    e.stopPropagation();
     const dateStr = format(day, 'yyyy-MM-dd');
     onOpenNote(habit.id, null, dateStr, habit.name);
   };
@@ -132,45 +126,27 @@ const HabitRow = ({ habit, days, onAddSubHabit, onDelete, checks, onToggleGlobal
   return (
     <>
       <div className="flex border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors bg-white dark:bg-slate-900 group/row">
-        
         <div className="flex shrink-0 sticky left-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-30 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)] dark:shadow-none transition-colors" style={{ width: `${sidebarWidth}px` }}>
           <div className="flex-1 px-2 md:px-4 py-3 md:py-4 flex items-center gap-1 md:gap-3 overflow-hidden">
             <button onClick={onToggleExpand} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-400 shrink-0">
               {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             </button>
-            
             <div className="flex flex-col min-w-0 flex-1">
-              <span className="font-bold text-slate-700 dark:text-slate-200 text-sm md:text-base truncate select-none cursor-pointer hover:underline" onClick={onEdit}>
-                {habit.name}
-              </span>
-              {habit.goal > 0 && (
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate">
-                  Goal: {habit.goal} {habit.unit}
-                </span>
-              )}
+              <span className="font-bold text-slate-700 dark:text-slate-200 text-sm md:text-base truncate select-none cursor-pointer hover:underline" onClick={onEdit}>{habit.name}</span>
+              {habit.goal > 0 && <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate">Goal: {habit.goal} {habit.unit}</span>}
             </div>
-
-            {currentStreak > 0 && (
-              <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-orange-50 dark:bg-orange-900/30 border border-orange-100 dark:border-orange-800 rounded-full text-[10px] font-bold text-orange-600 dark:text-orange-400 shrink-0 mr-1 animate-in zoom-in duration-300">
-                <Flame size={10} fill="currentColor" /> {currentStreak}
-              </div>
-            )}
-            
+            {currentStreak > 0 && <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-orange-50 dark:bg-orange-900/30 border border-orange-100 dark:border-orange-800 rounded-full text-[10px] font-bold text-orange-600 dark:text-orange-400 shrink-0 mr-1 animate-in zoom-in duration-300"><Flame size={10} fill="currentColor" /> {currentStreak}</div>}
             <div className="ml-auto flex gap-0.5 md:gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
-                <button onClick={onEdit} className="p-1 md:p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded" title="Edit Habit"><Pencil size={14} /></button>
-                <button onClick={() => { if(!expanded) onToggleExpand(); onAddSubHabit(habit.id); }} className="p-1 md:p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title="Add Sub-task"><Plus size={14} /></button>
-                <button onClick={onDelete} className="p-1 md:p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded" title="Delete Habit"><Trash2 size={14} /></button>
+                <button onClick={onEdit} className="p-1 md:p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"><Pencil size={14} /></button>
+                <button onClick={() => { if(!expanded) onToggleExpand(); onAddSubHabit(habit.id); }} className="p-1 md:p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"><Plus size={14} /></button>
+                <button onClick={onDelete} className="p-1 md:p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"><Trash2 size={14} /></button>
             </div>
           </div>
-
           <div className="w-12 md:w-24 px-1 md:px-4 py-4 border-l border-slate-50 dark:border-slate-800 flex items-center justify-center shrink-0">
-            <div className="hidden md:block w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden relative">
-              <div className="bg-blue-500 h-2.5 rounded-full transition-all duration-500" style={{ width: `${rowProgress}%` }}></div>
-            </div>
+            <div className="hidden md:block w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden relative"><div className="bg-blue-500 h-2.5 rounded-full transition-all duration-500" style={{ width: `${rowProgress}%` }}></div></div>
             <span className="md:ml-2 text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 md:w-6 text-right">{rowProgress}%</span>
           </div>
         </div>
-
         <div className="flex">
           {days.map((day) => {
              const isDayScheduled = isScheduled(day);
@@ -187,13 +163,14 @@ const HabitRow = ({ habit, days, onAddSubHabit, onDelete, checks, onToggleGlobal
                   <button
                     onClick={() => handleMainClick(day)}
                     onContextMenu={(e) => handleRightClick(e, day)}
+                    // FIX: 'select-none' prevents text selection, style prevents iOS menu
                     className={`
-                      w-8 h-8 md:w-12 md:h-10 rounded-md md:rounded-lg flex items-center justify-center transition-all duration-300 relative overflow-hidden group/btn
+                      w-8 h-8 md:w-12 md:h-10 rounded-md md:rounded-lg flex items-center justify-center transition-all duration-300 relative overflow-hidden group/btn select-none
                       ${isComplete ? 'bg-blue-600 text-white shadow-sm scale-100' : 'bg-slate-100 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-slate-700'}
                     `}
+                    style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}
                   >
                     {hasNote && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-purple-500 rounded-full border border-white dark:border-slate-800 z-10"></div>}
-                    
                     {isComplete && <Check size={18} className="md:w-6 md:h-6" strokeWidth={3} />}
                     {isPartial && (
                       <div className="relative w-full h-full flex items-center justify-center">
@@ -201,15 +178,11 @@ const HabitRow = ({ habit, days, onAddSubHabit, onDelete, checks, onToggleGlobal
                           <path className="text-blue-200 dark:text-slate-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
                           <path className="text-blue-500 transition-all duration-500 ease-out" strokeDasharray={`${progress}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
                         </svg>
-                        <span className="absolute text-[8px] md:text-[10px] font-bold text-blue-700 dark:text-blue-400">
-                          {isQuantitative ? val : progress}
-                        </span>
+                        <span className="absolute text-[8px] md:text-[10px] font-bold text-blue-700 dark:text-blue-400">{isQuantitative ? val : progress}</span>
                       </div>
                     )}
                   </button>
-                ) : (
-                  <div className="w-8 h-8 md:w-12 md:h-10 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800"></div>
-                )}
+                ) : <div className="w-8 h-8 md:w-12 md:h-10 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800"></div>}
               </div>
             );
           })}

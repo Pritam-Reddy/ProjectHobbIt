@@ -25,7 +25,8 @@ const SubHabitRow = ({ name, subHabit, days, completedDates, onToggle, onDelete,
   };
 
   const handleRightClick = (e, day) => {
-    e.preventDefault();
+    e.preventDefault(); // Stop native menu
+    e.stopPropagation();
     const dateStr = format(day, 'yyyy-MM-dd');
     onOpenNote(dateStr, `${name} (Sub-task)`);
   };
@@ -56,10 +57,12 @@ const SubHabitRow = ({ name, subHabit, days, completedDates, onToggle, onDelete,
                 <button
                   onClick={() => handleClick(day)}
                   onContextMenu={(e) => handleRightClick(e, day)}
+                  // FIX: Disable Selection & Callout
                   className={`
-                    w-6 h-6 md:w-10 md:h-8 rounded md:rounded-md flex items-center justify-center transition-all duration-200 relative
+                    w-6 h-6 md:w-10 md:h-8 rounded md:rounded-md flex items-center justify-center transition-all duration-200 relative select-none
                     ${isDone ? 'bg-blue-400 text-white shadow-sm' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500'}
                   `}
+                  style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}
                 >
                   {hasNote && <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-purple-500 rounded-full border border-white dark:border-slate-800 z-10"></div>}
                   {isQuantitative ? ( progress === 0 ? <span className="text-[8px] text-slate-300">-</span> : progress === 100 ? <Check size={14} className="md:w-[18px] md:h-[18px]" strokeWidth={3} /> : <span className="text-[8px] md:text-[10px] font-bold text-blue-600 dark:text-blue-300">{progress}%</span> ) : ( isDone && <Check size={14} className="md:w-[18px] md:h-[18px]" strokeWidth={3} /> )}

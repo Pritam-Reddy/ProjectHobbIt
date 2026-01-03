@@ -26,10 +26,15 @@ function App() {
 
   const [user, setUser] = useState(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false); 
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+
+  // --- DARK MODE (DEFAULT: TRUE) ---
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    return saved ? saved === 'dark' : true; // Default to Dark if no preference saved
+  });
 
   // --- RESIZABLE SIDEBAR ---
-  const [sidebarWidth, setSidebarWidth] = useState(window.innerWidth < 768 ? 180 : 360);
+  const [sidebarWidth, setSidebarWidth] = useState(window.innerWidth < 768 ? 160 : 320); // Slightly smaller default for mobile
   const isResizing = useRef(false);
 
   const startResizing = (e) => {
@@ -41,7 +46,8 @@ function App() {
       if (!isResizing.current) return;
       const clientX = moveEvent.clientX || (moveEvent.touches && moveEvent.touches[0].clientX);
       const newWidth = startWidth + (clientX - startX);
-      if (newWidth > 140 && newWidth < window.innerWidth * 0.8) {
+      // Limits: Min 120px, Max 80% screen width
+      if (newWidth > 120 && newWidth < window.innerWidth * 0.8) {
         setSidebarWidth(newWidth);
       }
     };
@@ -65,7 +71,7 @@ function App() {
   const DEFAULT_HABITS = [
     { id: 1, name: "Habit 1", subHabits: [], expanded: true, goal: 0, unit: "", frequency: DEFAULT_DAYS },
     { id: 2, name: "Habit 2", subHabits: [], expanded: true, goal: 0, unit: "", frequency: DEFAULT_DAYS },
-    { id: 3, name: "Habit 3", subHabits: [], expanded: true, goal: 0, unit: "", frequency: DEFAULT_DAYS }
+    { id: 3, name: "Habit 3", subHabits: [], expanded: true, goal: 2000, unit: "ml", frequency: DEFAULT_DAYS }
   ];
   const DEFAULT_CHECKS = {};
 
@@ -215,7 +221,6 @@ function App() {
     });
   };
 
-  // VALUE UPDATERS
   const updateHabitValue = (habitId, dateStr, value) => {
     setAllChecks(prev => {
       const habitData = prev[habitId] || { main: [], subs: {}, values: {}, subValues: {}, notes: {}, subNotes: {} };
@@ -234,30 +239,36 @@ function App() {
 
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
-      {/* HEADER */}
-      <div className="border-b border-slate-200 dark:border-slate-700 px-4 md:px-6 py-4 flex flex-col md:flex-row justify-between items-center bg-white dark:bg-slate-900 z-50 shadow-sm gap-4 transition-colors">
-        <div className="flex items-center gap-6 w-full md:w-auto justify-between">
-          <h1 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight">Project<span className="text-blue-600 dark:text-blue-400">HobbIt</span></h1>
-          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-lg p-1 border border-slate-100 dark:border-slate-700">
-            <button onClick={prevMonth} className="p-2 hover:bg-white dark:hover:bg-slate-700 hover:shadow rounded-md text-slate-500 dark:text-slate-400"><ChevronLeft size={16} /></button>
-            <span className="w-28 md:w-32 text-center text-sm font-semibold text-slate-700 dark:text-slate-200 select-none">{format(currentDate, 'MMMM yyyy')}</span>
-            <button onClick={nextMonth} className="p-2 hover:bg-white dark:hover:bg-slate-700 hover:shadow rounded-md text-slate-500 dark:text-slate-400"><ChevronRight size={16} /></button>
+      
+      {/* HEADER: Updated for Mobile Wrapping */}
+      <div className="border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex flex-col md:flex-row justify-between items-center bg-white dark:bg-slate-900 z-50 shadow-sm gap-3 transition-colors">
+        
+        {/* LOGO & DATE */}
+        <div className="flex items-center justify-between w-full md:w-auto gap-4">
+          <h1 className="text-lg md:text-xl font-bold text-slate-800 dark:text-white tracking-tight">
+            Project<span className="text-blue-600 dark:text-blue-400">HobbIt</span>
+          </h1>
+          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 rounded-lg p-1 border border-slate-100 dark:border-slate-700">
+            <button onClick={prevMonth} className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow rounded-md text-slate-500 dark:text-slate-400"><ChevronLeft size={16} /></button>
+            <span className="w-24 md:w-32 text-center text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-200 select-none">{format(currentDate, 'MMMM yyyy')}</span>
+            <button onClick={nextMonth} className="p-1.5 hover:bg-white dark:hover:bg-slate-700 hover:shadow rounded-md text-slate-500 dark:text-slate-400"><ChevronRight size={16} /></button>
           </div>
         </div>
 
-         <div className="flex items-center gap-3 w-full md:w-auto">
+         {/* CONTROLS */}
+         <div className="flex items-center gap-2 w-full md:w-auto justify-end">
             <button onClick={() => setDarkMode(!darkMode)} className="p-2 text-slate-500 dark:text-yellow-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors">{darkMode ? <Sun size={18} /> : <Moon size={18} />}</button>
-            <button onClick={() => setShowDashboard(!showDashboard)} className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-semibold transition-all whitespace-nowrap ${showDashboard ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>{showDashboard ? <X size={18} /> : <LayoutDashboard size={18} />} <span className="hidden md:inline">{showDashboard ? 'Close Stats' : 'Stats'}</span></button>
+            <button onClick={() => setShowDashboard(!showDashboard)} className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs md:text-sm font-semibold transition-all whitespace-nowrap ${showDashboard ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>{showDashboard ? <X size={18} /> : <LayoutDashboard size={18} />} <span className="hidden md:inline">{showDashboard ? 'Close' : 'Stats'}</span></button>
             
-            <button onClick={openCreateModal} className="flex-1 md:flex-none bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-500 text-white px-5 py-2.5 rounded-full font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
-              <Plus size={18} strokeWidth={3} /> <span className="text-sm">Add Habit</span>
+            <button onClick={openCreateModal} className="bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-500 text-white px-4 py-2 rounded-full font-bold shadow-md transition-all flex items-center justify-center gap-2 text-xs md:text-sm">
+              <Plus size={16} strokeWidth={3} /> <span>New</span>
             </button>
             
             <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2 hidden md:block"></div>
             {user ? (
               <div className="flex items-center gap-3 shrink-0">
                  {user.photoURL ? (<img src={user.photoURL} alt="User" className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-600" title={user.displayName} />) : (<div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400" title={user.displayName}><User size={18} /></div>)}
-                 <button onClick={() => {if(confirm("Log out?")) signOut(auth)}} className="text-xs font-bold text-slate-500 dark:text-slate-300 hover:text-red-600">Log Out</button>
+                 <button onClick={() => {if(confirm("Log out?")) signOut(auth)}} className="text-xs font-bold text-slate-500 dark:text-slate-300 hover:text-red-600">Exit</button>
               </div>
             ) : (<button onClick={() => setIsAuthOpen(true)} className="flex items-center gap-2 text-sm font-semibold"><LogIn size={18}/> Login</button>)}
          </div>
@@ -268,14 +279,17 @@ function App() {
       <div className="flex-1 overflow-hidden relative flex flex-col bg-white dark:bg-slate-900">
         <div className="flex-1 overflow-auto">
           <div className="inline-block min-w-full align-top">
+            
+            {/* MAIN LIST HEADER */}
             <div className="flex border-b border-slate-200 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-900 z-40 transition-colors">
                <div className="flex shrink-0 sticky left-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-50 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)] dark:shadow-none relative group transition-colors" style={{ width: `${sidebarWidth}px` }}>
                   <div className="flex-1 p-2 md:p-5 font-bold text-slate-400 dark:text-slate-500 text-[10px] md:text-xs uppercase tracking-wider flex items-end pb-2 md:pb-4 gap-2 overflow-hidden">
-                    <span>Habit Name</span>
+                    <span>Habit</span>
                     <button onClick={collapseAll} className="mb-0.5 text-slate-400 hover:text-blue-600"><MinusCircle size={14} /></button>
                   </div>
                   <div className="w-12 md:w-24 p-2 md:p-5 font-bold text-slate-400 dark:text-slate-500 text-[10px] md:text-xs uppercase tracking-wider flex items-end pb-2 md:pb-4 text-center border-l border-slate-50 dark:border-slate-800 shrink-0"><span className="hidden md:inline">Progress</span><span className="md:hidden">%</span></div>
-                  <div className="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-blue-400 active:bg-blue-600 z-[60] transition-colors" onMouseDown={startResizing} onTouchStart={startResizing}><div className="absolute top-1/2 -translate-y-1/2 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity"><GripVertical size={12} className="text-slate-400" /></div></div>
+                  {/* Resizer Handle */}
+                  <div className="absolute top-0 right-0 h-full w-2 cursor-col-resize hover:bg-blue-400/20 active:bg-blue-600 z-[60] transition-colors" onMouseDown={startResizing} onTouchStart={startResizing}></div>
                </div>
                <div className="flex">
                  {daysInMonth.map((day) => (
