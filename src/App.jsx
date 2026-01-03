@@ -8,19 +8,23 @@ import { auth, db } from "./firebase";
 import HabitRow from './components/HabitRow';
 import AuthModal from './components/AuthModal';
 import Dashboard from './components/Dashboard';
+import EditHabitModal from './components/EditHabitModal';
 
 function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
   
+  // --- MODAL STATE ---
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingHabit, setEditingHabit] = useState(null); 
+  const [editingParentId, setEditingParentId] = useState(null); 
+
   const [user, setUser] = useState(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false); 
 
-  // --- DARK MODE STATE ---
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark';
-  });
+  // --- DARK MODE ---
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
 
   useEffect(() => {
     if (darkMode) {
@@ -64,11 +68,12 @@ function App() {
     document.addEventListener('touchend', onUp);
   };
 
-  // --- DEFAULT DATA ---
+  // --- DATA ---
+  const DEFAULT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const DEFAULT_HABITS = [
-    { id: 1, name: "Habit 1", subHabits: [], expanded: true, goal: 0, unit: "" },
-    { id: 2, name: "Habit 2", subHabits: [], expanded: true, goal: 0, unit: "" },
-    { id: 3, name: "Habit 3", subHabits: [], expanded: true, goal: 0, unit: "" }
+    { id: 1, name: "Habit 1", subHabits: [], expanded: true, goal: 0, unit: "", frequency: DEFAULT_DAYS },
+    { id: 2, name: "Habit 2", subHabits: [], expanded: true, goal: 0, unit: "", frequency: DEFAULT_DAYS },
+    { id: 3, name: "Habit 3", subHabits: [], expanded: true, goal: 0, unit: "", frequency: DEFAULT_DAYS }
   ];
   const DEFAULT_CHECKS = {};
 
@@ -132,9 +137,6 @@ function App() {
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
-  const [newHabitName, setNewHabitName] = useState("");
-  const [newHabitGoal, setNewHabitGoal] = useState("");
-
   const handleLogout = async () => {
     if (window.confirm("Are you sure you want to log out?")) {
       localStorage.removeItem('habits');
@@ -144,36 +146,48 @@ function App() {
     }
   };
 
-  const renameHabit = (habitId, newName) => {
-    if (!newName.trim()) return;
-    setHabits(habits.map(h => h.id === habitId ? { ...h, name: newName } : h));
+  // --- MODAL HANDLERS ---
+  const openCreateModal = () => {
+    setEditingHabit(null);
+    setEditingParentId(null);
+    setIsModalOpen(true);
   };
 
-  const toggleHabitExpansion = (habitId) => {
-    setHabits(habits.map(h => h.id === habitId ? { ...h, expanded: !h.expanded } : h));
+  const openEditModal = (habit) => {
+    setEditingHabit(habit);
+    setEditingParentId(null);
+    setIsModalOpen(true);
   };
 
-  const collapseAll = () => {
-    setHabits(habits.map(h => ({ ...h, expanded: false })));
+  const openEditSubModal = (parentId, subHabit) => {
+    setEditingParentId(parentId);
+    setEditingHabit(subHabit);
+    setIsModalOpen(true);
   };
 
-  const addHabit = (e) => {
-    e.preventDefault();
-    if (!newHabitName.trim()) return;
-    
-    const goalNum = parseInt(newHabitGoal) || 0;
-    const unitStr = goalNum > 0 ? (prompt("Unit? (e.g., ml, mins, pages)") || "") : "";
-
-    setHabits([...habits, { 
-      id: Date.now(), 
-      name: newHabitName, 
-      subHabits: [], 
-      expanded: true,
-      goal: goalNum,
-      unit: unitStr
-    }]);
-    setNewHabitName("");
-    setNewHabitGoal("");
+  // --- SAVE LOGIC ---
+  const handleSaveHabitData = (id, data) => {
+    if (editingParentId) {
+      setHabits(habits.map(h => {
+        if (h.id === editingParentId) {
+          return {
+            ...h,
+            subHabits: h.subHabits.map(sub => sub.id === id ? { ...sub, ...data } : sub)
+          };
+        }
+        return h;
+      }));
+    } else if (id) {
+      setHabits(habits.map(h => h.id === id ? { ...h, ...data } : h));
+    } else {
+      const newHabit = {
+        id: Date.now(),
+        subHabits: [],
+        expanded: true,
+        ...data
+      };
+      setHabits([...habits, newHabit]);
+    }
   };
 
   const deleteHabit = (habitId) => {
@@ -196,31 +210,46 @@ function App() {
   const addSubHabit = (parentId) => {
     const name = prompt("Enter sub-habit name:");
     if (!name) return;
-    const newSubId = Date.now();
-    const parentHabit = habits.find(h => h.id === parentId);
-    const isFirstSubHabit = parentHabit.subHabits.length === 0;
+    const parent = habits.find(h => h.id === parentId);
+    
+    const newSub = { 
+      id: Date.now(), 
+      name, 
+      goal: 0, 
+      unit: '', 
+      frequency: parent.frequency || DEFAULT_DAYS 
+    };
 
     setHabits(habits.map(h => h.id === parentId ? 
-      { ...h, subHabits: [...h.subHabits, { id: newSubId, name }], expanded: true } : h
+      { ...h, subHabits: [...h.subHabits, newSub], expanded: true } : h
     ));
-
-    if (isFirstSubHabit) {
+    
+    if (parent.subHabits.length === 0) {
       const existingHistory = allChecks[parentId]?.main || [];
       if (existingHistory.length > 0) {
         setAllChecks(prev => {
-          const habitData = prev[parentId] || { main: [], subs: {}, values: {} };
+          const habitData = prev[parentId] || { main: [], subs: {}, values: {}, subValues: {} };
           return {
             ...prev,
-            [parentId]: { ...habitData, subs: { ...habitData.subs, [newSubId]: existingHistory } }
+            [parentId]: { ...habitData, subs: { ...habitData.subs, [newSub.id]: existingHistory } }
           };
         });
       }
     }
   };
 
+  const toggleHabitExpansion = (habitId) => {
+    setHabits(habits.map(h => h.id === habitId ? { ...h, expanded: !h.expanded } : h));
+  };
+
+  const collapseAll = () => {
+    setHabits(habits.map(h => ({ ...h, expanded: false })));
+  };
+
   const toggleCheckGlobal = (habitId, type, dateStr, subId = null) => {
     setAllChecks(prev => {
-      const habitData = prev[habitId] || { main: [], subs: {}, values: {} };
+      // Ensure structure exists
+      const habitData = prev[habitId] || { main: [], subs: {}, values: {}, subValues: {} };
       const newHabitData = { ...habitData, subs: { ...habitData.subs } };
 
       if (type === 'main') {
@@ -237,17 +266,37 @@ function App() {
     });
   };
 
-  // NEW: Update Value for Quantitative Habits
+  // Update MAIN Habit Goal
   const updateHabitValue = (habitId, dateStr, value) => {
     setAllChecks(prev => {
-      const habitData = prev[habitId] || { main: [], subs: {}, values: {} };
-      // Ensure values object exists
+      const habitData = prev[habitId] || { main: [], subs: {}, values: {}, subValues: {} };
       const currentValues = habitData.values || {};
       const newValues = { ...currentValues, [dateStr]: Number(value) };
-      
       return { 
         ...prev, 
         [habitId]: { ...habitData, values: newValues } 
+      };
+    });
+  };
+
+  // NEW: Update SUB Habit Goal
+  const updateSubHabitValue = (habitId, subId, dateStr, value) => {
+    setAllChecks(prev => {
+      const habitData = prev[habitId] || { main: [], subs: {}, values: {}, subValues: {} };
+      const currentSubValues = habitData.subValues || {};
+      const specificSubValues = currentSubValues[subId] || {};
+      
+      const newSpecificSubValues = { ...specificSubValues, [dateStr]: Number(value) };
+      
+      return {
+        ...prev,
+        [habitId]: {
+          ...habitData,
+          subValues: {
+            ...currentSubValues,
+            [subId]: newSpecificSubValues
+          }
+        }
       };
     });
   };
@@ -285,22 +334,12 @@ function App() {
             <span className="hidden md:inline">{showDashboard ? 'Close Stats' : 'Stats'}</span>
           </button>
 
-          <form onSubmit={addHabit} className="flex gap-2 flex-1 md:flex-none">
-            <input 
-              value={newHabitName}
-              onChange={e => setNewHabitName(e.target.value)}
-              placeholder="Add habit..." 
-              className="w-full md:w-32 px-4 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-l-full bg-slate-50 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900"
-            />
-             <input 
-              value={newHabitGoal}
-              onChange={e => setNewHabitGoal(e.target.value)}
-              placeholder="Goal #" 
-              type="number"
-              className="w-16 md:w-20 px-2 py-2 text-sm border-t border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white focus:outline-none"
-            />
-            <button type="submit" className="bg-slate-900 dark:bg-blue-600 text-white p-2 rounded-r-full shadow-md shrink-0"><Plus size={18} /></button>
-          </form>
+          <button 
+            onClick={openCreateModal}
+            className="flex-1 md:flex-none bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-500 text-white px-5 py-2.5 rounded-full font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+          >
+            <Plus size={18} strokeWidth={3} /> <span className="text-sm">Add Habit</span>
+          </button>
           
           <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2 hidden md:block"></div>
           
@@ -328,7 +367,6 @@ function App() {
           <div className="inline-block min-w-full align-top">
             
             <div className="flex border-b border-slate-200 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-900 z-40 transition-colors">
-              
               <div 
                 className="flex shrink-0 sticky left-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 z-50 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)] dark:shadow-none relative group transition-colors"
                 style={{ width: `${sidebarWidth}px` }}
@@ -375,10 +413,15 @@ function App() {
                   onAddSubHabit={addSubHabit}
                   onDelete={() => deleteHabit(habit.id)}
                   onDeleteSubHabit={deleteSubHabit}
-                  onRename={renameHabit}
-                  checks={allChecks[habit.id] || { main: [], subs: {}, values: {} }}
+                  
+                  onEdit={() => openEditModal(habit)} 
+                  onEditSubHabit={(sub) => openEditSubModal(habit.id, sub)}
+
+                  checks={allChecks[habit.id] || { main: [], subs: {}, values: {}, subValues: {} }}
                   onToggleGlobal={toggleCheckGlobal}
-                  onUpdateValue={updateHabitValue} // PASS NEW FUNCTION
+                  onUpdateValue={updateHabitValue}
+                  onUpdateSubValue={updateSubHabitValue} // PASS NEW FUNCTION
+                  
                   expanded={habit.expanded}
                   onToggleExpand={() => toggleHabitExpansion(habit.id)}
                   sidebarWidth={sidebarWidth}
@@ -390,6 +433,14 @@ function App() {
       </div>
 
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+      
+      <EditHabitModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        habit={editingHabit}
+        onSave={handleSaveHabitData}
+        isSubHabit={!!editingParentId}
+      />
     </div>
   )
 }
