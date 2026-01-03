@@ -4,7 +4,7 @@ import { format, subDays } from 'date-fns';
 import confetti from 'canvas-confetti';
 import SubHabitRow from './SubHabitRow';
 
-const HabitRow = ({ habit, days, onAddSubHabit, onDelete, checks, onToggleGlobal, onDeleteSubHabit, expanded, onToggleExpand, onEdit, sidebarWidth, onUpdateValue, onEditSubHabit, onUpdateSubValue }) => {
+const HabitRow = ({ habit, days, onAddSubHabit, onDelete, checks, onToggleGlobal, onDeleteSubHabit, expanded, onToggleExpand, onEdit, sidebarWidth, onUpdateValue, onEditSubHabit, onUpdateSubValue, notes, subNotes, onOpenNote }) => {
   
   const isScheduled = (date) => {
     if (!habit.frequency) return true;
@@ -17,31 +17,25 @@ const HabitRow = ({ habit, days, onAddSubHabit, onDelete, checks, onToggleGlobal
 
   // --- PROGRESS CALCULATION ---
   const getDailyProgress = (dateStr) => {
-    // 1. Quantitative Main Habit
     if (isQuantitative) {
        const val = checks.values ? (checks.values[dateStr] || 0) : 0;
        return Math.min(100, Math.round((val / habit.goal) * 100));
     }
     
-    // 2. Simple Main Habit (Binary)
     if (!hasSubHabits) return checks.main.includes(dateStr) ? 100 : 0;
     
-    // 3. Aggregate Sub-Habits (Mixed Binary & Quantitative)
     let totalSubCompletion = 0;
     
     habit.subHabits.forEach(sub => {
-      // Is this sub-habit quantitative?
       if (sub.goal > 0) {
         const val = checks.subValues?.[sub.id]?.[dateStr] || 0;
         totalSubCompletion += Math.min(1, val / sub.goal);
       } else {
-        // Binary Sub-habit
         const isDone = checks.subs[sub.id]?.includes(dateStr);
         if (isDone) totalSubCompletion += 1;
       }
     });
     
-    // Average out the progress
     return Math.round((totalSubCompletion / habit.subHabits.length) * 100);
   };
 
@@ -89,12 +83,10 @@ const HabitRow = ({ habit, days, onAddSubHabit, onDelete, checks, onToggleGlobal
 
   const currentStreak = calculateStreak();
 
-  // --- CLICK HANDLER (THE FIX IS HERE) ---
   const handleMainClick = (date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     
     if (isQuantitative) {
-      // Main Habit is Quantitative -> Ask for number
       const currentVal = checks.values ? (checks.values[dateStr] || 0) : 0;
       const input = prompt(`Enter value for today (Goal: ${habit.goal} ${habit.unit}):`, currentVal);
       if (input !== null) {
@@ -104,9 +96,8 @@ const HabitRow = ({ habit, days, onAddSubHabit, onDelete, checks, onToggleGlobal
         }
       }
     } else {
-      // Main Habit is Binary OR Container for Sub-Habits
       const progress = getDailyProgress(dateStr);
-      const isTurningOn = progress < 100; // If not 100% done, we turn EVERYTHING on.
+      const isTurningOn = progress < 100;
 
       if (isTurningOn) {
         confetti({ particleCount: 40, spread: 70, origin: { y: 0.7 }, colors: ['#2563eb', '#60a5fa', '#ffffff'], disableForReducedMotion: true });
@@ -115,20 +106,11 @@ const HabitRow = ({ habit, days, onAddSubHabit, onDelete, checks, onToggleGlobal
       if (!hasSubHabits) {
         onToggleGlobal(habit.id, 'main', dateStr);
       } else {
-        // Toggle ALL Sub-Habits
         habit.subHabits.forEach(sub => {
-          // CASE 1: Quantitative Sub-Habit (e.g. 100 Crunches)
           if (sub.goal > 0) {
-            if (isTurningOn) {
-               // Auto-fill to MAX GOAL
-               onUpdateSubValue(habit.id, sub.id, dateStr, sub.goal);
-            } else {
-               // Reset to 0
-               onUpdateSubValue(habit.id, sub.id, dateStr, 0);
-            }
-          } 
-          // CASE 2: Binary Sub-Habit
-          else {
+            if (isTurningOn) onUpdateSubValue(habit.id, sub.id, dateStr, sub.goal);
+            else onUpdateSubValue(habit.id, sub.id, dateStr, 0);
+          } else {
             const subIsChecked = checks.subs[sub.id]?.includes(dateStr);
             if (isTurningOn) { 
               if (!subIsChecked) onToggleGlobal(habit.id, 'sub', dateStr, sub.id); 
@@ -141,14 +123,17 @@ const HabitRow = ({ habit, days, onAddSubHabit, onDelete, checks, onToggleGlobal
     }
   };
 
+  const handleRightClick = (e, day) => {
+    e.preventDefault();
+    const dateStr = format(day, 'yyyy-MM-dd');
+    onOpenNote(habit.id, null, dateStr, habit.name);
+  };
+
   return (
     <>
       <div className="flex border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors bg-white dark:bg-slate-900 group/row">
         
-        <div 
-          className="flex shrink-0 sticky left-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-30 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)] dark:shadow-none transition-colors"
-          style={{ width: `${sidebarWidth}px` }}
-        >
+        <div className="flex shrink-0 sticky left-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-30 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)] dark:shadow-none transition-colors" style={{ width: `${sidebarWidth}px` }}>
           <div className="flex-1 px-2 md:px-4 py-3 md:py-4 flex items-center gap-1 md:gap-3 overflow-hidden">
             <button onClick={onToggleExpand} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-400 shrink-0">
               {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -194,20 +179,21 @@ const HabitRow = ({ habit, days, onAddSubHabit, onDelete, checks, onToggleGlobal
              const isComplete = progress === 100;
              const isPartial = progress > 0 && progress < 100;
              const val = isQuantitative && checks.values ? checks.values[dateStr] : null;
+             const hasNote = notes[dateStr] && notes[dateStr].trim().length > 0;
 
              return (
               <div key={day.toString()} className="min-w-[50px] md:min-w-[80px] border-r border-slate-100 dark:border-slate-800 flex items-center justify-center p-1 md:p-2 bg-white dark:bg-slate-900">
                 {isDayScheduled ? (
                   <button
                     onClick={() => handleMainClick(day)}
+                    onContextMenu={(e) => handleRightClick(e, day)}
                     className={`
-                      w-8 h-8 md:w-12 md:h-10 rounded-md md:rounded-lg flex items-center justify-center transition-all duration-300 relative overflow-hidden
-                      ${isComplete 
-                        ? 'bg-blue-600 text-white shadow-sm scale-100' 
-                        : 'bg-slate-100 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-slate-700'
-                      }
+                      w-8 h-8 md:w-12 md:h-10 rounded-md md:rounded-lg flex items-center justify-center transition-all duration-300 relative overflow-hidden group/btn
+                      ${isComplete ? 'bg-blue-600 text-white shadow-sm scale-100' : 'bg-slate-100 dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-slate-700'}
                     `}
                   >
+                    {hasNote && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-purple-500 rounded-full border border-white dark:border-slate-800 z-10"></div>}
+                    
                     {isComplete && <Check size={18} className="md:w-6 md:h-6" strokeWidth={3} />}
                     {isPartial && (
                       <div className="relative w-full h-full flex items-center justify-center">
@@ -237,16 +223,15 @@ const HabitRow = ({ habit, days, onAddSubHabit, onDelete, checks, onToggleGlobal
           subHabit={sub}
           days={days}
           completedDates={checks.subs[sub.id] || []}
-          
-          // PASSING DATA DOWN
           subValues={checks.subValues?.[sub.id] || {}}
           onUpdateSubValue={(date, val) => onUpdateSubValue(habit.id, sub.id, date, val)}
-          
           onToggle={(date) => onToggleGlobal(habit.id, 'sub', format(date, 'yyyy-MM-dd'), sub.id)}
           onDelete={() => onDeleteSubHabit(habit.id, sub.id)}
           onEdit={() => onEditSubHabit(sub)}
           sidebarWidth={sidebarWidth}
           isParentScheduled={(date) => isScheduled(date)}
+          subNotes={subNotes[sub.id] || {}}
+          onOpenNote={(date, name) => onOpenNote(habit.id, sub.id, date, name)}
         />
       ))}
     </>
