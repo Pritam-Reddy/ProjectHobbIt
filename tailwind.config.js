@@ -4,6 +4,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class', // <--- THIS IS THE MISSING LINE THAT FIXES THE TOGGLE
   theme: {
     extend: {},
   },

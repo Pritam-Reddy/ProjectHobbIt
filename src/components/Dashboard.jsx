@@ -6,7 +6,7 @@ import {
 import { format } from 'date-fns';
 import { TrendingUp, ArrowRight, BarChart2 } from 'lucide-react';
 
-const Dashboard = ({ habits, allChecks, daysInMonth }) => {
+const Dashboard = ({ habits, allChecks, daysInMonth, darkMode }) => {
   const [selectedHabitId, setSelectedHabitId] = useState(null);
 
   // --- 1. PREPARE DATA FOR GRAPH ---
@@ -24,18 +24,23 @@ const Dashboard = ({ habits, allChecks, daysInMonth }) => {
         : habits;
 
       habitsToProcess.forEach(habit => {
-        const habitData = allChecks[habit.id] || { main: [], subs: {} };
+        const habitData = allChecks[habit.id] || { main: [], subs: {}, values: {} };
         const hasSubHabits = habit.subHabits && habit.subHabits.length > 0;
-
-        if (hasSubHabits) {
-          // Complex Habit Logic: Only count sub-habits
+        
+        // Handling Quantitative Goals in Graph
+        if (habit.goal > 0) {
+            dayPossible++;
+            const val = habitData.values ? (habitData.values[dateStr] || 0) : 0;
+            // Add proportional credit (capped at 1)
+            dayChecks += Math.min(1, val / habit.goal);
+        } 
+        else if (hasSubHabits) {
           habit.subHabits.forEach(sub => {
             dayPossible++;
             const subChecks = habitData.subs[sub.id] || [];
             if (subChecks.includes(dateStr)) dayChecks++;
           });
         } else {
-          // Simple Habit Logic
           dayPossible++;
           if (habitData.main.includes(dateStr)) dayChecks++;
         }
@@ -63,16 +68,17 @@ const Dashboard = ({ habits, allChecks, daysInMonth }) => {
     { name: 'Left', value: 100 - overallRate }
   ];
 
-  // --- 2. TOP HABITS LOGIC ---
   const habitPerformance = habits.map(habit => {
     let score = 0;
     daysInMonth.forEach(day => {
        const d = format(day, 'yyyy-MM-dd');
-       const habitData = allChecks[habit.id] || { main: [], subs: {} };
+       const habitData = allChecks[habit.id] || { main: [], subs: {}, values: {} };
        const hasSubHabits = habit.subHabits && habit.subHabits.length > 0;
 
-       if (hasSubHabits) {
-         // NEW LOGIC: If ANY sub-habit is done, count it!
+       if (habit.goal > 0) {
+          const val = habitData.values ? (habitData.values[d] || 0) : 0;
+          if (val >= habit.goal) score++;
+       } else if (hasSubHabits) {
          const anySubDone = habit.subHabits.some(sub => 
            (habitData.subs[sub.id] || []).includes(d)
          );
@@ -86,18 +92,23 @@ const Dashboard = ({ habits, allChecks, daysInMonth }) => {
 
   const selectedHabitName = habits.find(h => h.id === selectedHabitId)?.name || "Global Consistency";
 
+  // --- STYLE FIX FOR TOOLTIP ---
+  const tooltipStyle = darkMode 
+    ? { borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', backgroundColor: '#1e293b', color: '#fff' }
+    : { borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', backgroundColor: '#fff', color: '#1e293b' };
+
   return (
-    <div className="bg-slate-50 border-b border-slate-200 p-6 animate-in slide-in-from-top-4 duration-500">
+    <div className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-6 animate-in slide-in-from-top-4 duration-500 transition-colors">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6">
         
         {/* 1. OVERALL PROGRESS */}
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center justify-center relative overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center relative overflow-hidden transition-colors">
            {selectedHabitId && (
-            <div className="absolute top-2 right-2 text-[10px] font-bold bg-blue-100 text-blue-600 px-2 py-1 rounded">
+            <div className="absolute top-2 right-2 text-[10px] font-bold bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 px-2 py-1 rounded">
               FILTER ACTIVE
             </div>
           )}
-          <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-4">Completion Rate</h3>
+          <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-4">Completion Rate</h3>
           <div className="relative w-32 h-32">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -110,27 +121,27 @@ const Dashboard = ({ habits, allChecks, daysInMonth }) => {
                   stroke="none"
                 >
                   <Cell fill="#2563eb" />
-                  <Cell fill="#f1f5f9" />
+                  <Cell fill={darkMode ? '#334155' : '#f1f5f9'} stroke="none" /> 
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
-            <div className="absolute inset-0 flex items-center justify-center text-2xl font-bold text-slate-700">
+            <div className="absolute inset-0 flex items-center justify-center text-2xl font-bold text-slate-700 dark:text-white">
               {overallRate}%
             </div>
           </div>
         </div>
 
         {/* 2. CONSISTENCY CHART */}
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 col-span-2">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 col-span-2 transition-colors">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+            <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
               <TrendingUp size={14} />
               {selectedHabitName}
             </h3>
             {selectedHabitId && (
               <button 
                 onClick={() => setSelectedHabitId(null)}
-                className="text-[10px] font-bold text-slate-400 hover:text-slate-600 hover:underline"
+                className="text-[10px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:underline"
               >
                 CLEAR FILTER
               </button>
@@ -140,10 +151,10 @@ const Dashboard = ({ habits, allChecks, daysInMonth }) => {
           <div className="h-32">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={dailyData}>
-                <XAxis dataKey="date" tick={{fontSize: 10}} axisLine={false} tickLine={false} interval={2} />
+                <XAxis dataKey="date" tick={{fontSize: 10, fill: '#94a3b8'}} axisLine={false} tickLine={false} interval={2} />
                 <Tooltip 
-                  contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
-                  labelStyle={{color: '#64748b'}}
+                  contentStyle={tooltipStyle}
+                  labelStyle={{color: '#94a3b8'}}
                 />
                 <Line 
                   type="monotone" 
@@ -159,36 +170,36 @@ const Dashboard = ({ habits, allChecks, daysInMonth }) => {
           </div>
         </div>
 
-        {/* 3. TOP HABITS LIST (SCROLLABLE) */}
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col h-full max-h-[220px]">
-          <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-3 shrink-0">Habit Performance</h3>
+        {/* 3. TOP HABITS LIST */}
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col h-full max-h-[220px] transition-colors">
+          <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mb-3 shrink-0">Habit Performance</h3>
           
-          <div className="space-y-2 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent flex-1">
+          <div className="space-y-2 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent flex-1">
             {habitPerformance.map((h, i) => (
               <div 
                 key={h.id} 
                 className={`
                   flex items-center justify-between p-2 rounded-lg transition-all cursor-pointer group
-                  ${selectedHabitId === h.id ? 'bg-blue-50 ring-1 ring-blue-200' : 'hover:bg-slate-50'}
+                  ${selectedHabitId === h.id ? 'bg-blue-50 dark:bg-blue-900/30 ring-1 ring-blue-200 dark:ring-blue-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}
                 `}
                 onClick={() => setSelectedHabitId(h.id === selectedHabitId ? null : h.id)}
               >
                 <div className="flex items-center gap-3 overflow-hidden">
                   <span className={`
                     w-5 h-5 flex items-center justify-center rounded text-[10px] font-bold shrink-0
-                    ${i === 0 ? 'bg-yellow-100 text-yellow-600' : 'bg-slate-100 text-slate-500'}
+                    ${i === 0 ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/50 dark:text-yellow-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}
                   `}>
                     {i + 1}
                   </span>
                   <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-medium text-slate-700 truncate">{h.name}</span>
-                    <span className="text-[10px] text-slate-400 font-medium">{h.score} days active</span>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{h.name}</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{h.score} days active</span>
                   </div>
                 </div>
                 
                 <button className={`
-                  text-slate-300 group-hover:text-blue-500 transition-colors
-                  ${selectedHabitId === h.id ? 'text-blue-600' : ''}
+                  text-slate-300 dark:text-slate-600 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors
+                  ${selectedHabitId === h.id ? 'text-blue-600 dark:text-blue-400' : ''}
                 `}>
                   {selectedHabitId === h.id ? <BarChart2 size={16} /> : <ArrowRight size={16} />}
                 </button>
