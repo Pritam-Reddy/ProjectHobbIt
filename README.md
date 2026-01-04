@@ -1,16 +1,70 @@
-# React + Vite
+# 🦁 ProjectHobbIt
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Hey there! **ProjectHobbIt** is a habit tracker I built because I grew tired of apps that couldn't accommodate my actual work style. It's mobile-first, lets you track things with real numbers (not just checkboxes), and gives you a satisfying GitHub-style heatmap to see your year at a glance.
 
-Currently, two official plugins are available:
+🔗 **Check it out:** [https://projecthobbit-f83e9.web.app]
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## ✨ What Makes It Different
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 📊 Analytics That Actually Matter
 
-## Expanding the ESLint configuration
+I wanted to see my progress over time without drowning in charts, so I built:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+* **Yearly Heatmap** – Think GitHub contributions, but for your life. Flip between years (2024-2026) to see how you've been doing.
+* **The Numbers That Count** – Your longest streak and total active days, front and center.
+* **Visual Progress** – Pie charts and trend lines that make sense at a glance.
+* **Smart Rankings** – The app figures out which habits you're crushing and which need attention.
+
+### 🎯 Track How You Actually Think
+
+Not everything is yes/no, right? That's why you can:
+
+* **Simple Checkboxes** – For stuff like "Read for 30 minutes" (done or not done).
+* **Actual Numbers** – Track things like "Drink 2000ml of water" and get credit for partial progress.
+* **Break It Down** – Nest sub-tasks under habits (like Gym → Warmup, Cardio, Weights) because some goals have steps.
+
+### 📱 Built for Your Phone
+
+I designed this thinking about how you'd actually use it:
+
+* **Feels Like an App** – Everything's sized right for thumbs, not mouse cursors.
+* **Jumps to Today** – The heatmap scrolls to the current date automatically on mobile.
+* **No Annoying Pop-ups** – I disabled those copy/paste menus on buttons so it feels smooth.
+
+### 📝 Remember Why It Mattered
+
+* **Context Notes** – Right-click (or long-press) any day to jot down what happened. Had a great workout? Felt sick? Write it down.
+* **Visual Reminder** – Little purple dots show which days have notes.
+
+### 🎨 The Little Things
+
+* **Dark by Default** – Because let's be honest, dark mode is better. (But you can switch if you want.)
+* **Confetti!** – You get a little celebration when you complete something. It's silly but it works.
+* **Make It Yours** – Resize the sidebar on desktop however you like.
+
+---
+
+## 🛠️ What's Under the Hood
+
+* **Frontend:** React with Vite (because life's too short for slow builds)
+* **Styling:** Tailwind CSS
+* **Icons:** Lucide React
+* **Charts:** Recharts for the data viz, Canvas Confetti for the celebrations
+* **Dates:** date-fns (because date logic is painful)
+* **Backend:** Firebase Firestore
+* **Auth:** Firebase Authentication
+* **Hosting:** Firebase
+
+---
+
+## 🔒 About Usage
+
+**© 2026 [Pritam Reddy]. All Rights Reserved.**
+
+This is a personal project I'm sharing as part of my portfolio. Feel free to look around and get inspired, but please don't use the code for your own projects. If you want to build something similar, I'd love to chat about it!
+
+---
+
+*Made with care (and way too much coffee) by [Pritam Reddy]*
