@@ -3,6 +3,7 @@
 Hey there! **ProjectHobbIt** is a habit tracker I built because I grew tired of apps that couldn't accommodate my actual work style. It's mobile-first, lets you track things with real numbers (not just checkboxes), and gives you a satisfying GitHub-style heatmap to see your year at a glance.
 
 🔗 **Check it out:** [https://projecthobbit-f83e9.web.app]
+<img width="1437" height="786" alt="Screenshot 2026-01-04 at 11 05 33 AM" src="https://github.com/user-attachments/assets/6b05fad6-e5a7-4380-87a7-b31d9b8d6a2c" />
 
 ---
 
