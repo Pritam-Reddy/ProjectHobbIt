@@ -4,6 +4,7 @@ Hey there! **ProjectHobbIt** is a habit tracker I built because I grew tired of 
 
 🔗 **Check it out:** [https://projecthobbit-f83e9.web.app]
 <img width="1437" height="786" alt="Screenshot 2026-01-04 at 11 05 33 AM" src="https://github.com/user-attachments/assets/6b05fad6-e5a7-4380-87a7-b31d9b8d6a2c" />
+
 <img width="1440" height="796" alt="Screenshot 2026-01-04 at 11 13 22 AM" src="https://github.com/user-attachments/assets/e4c81c71-e9fd-4414-a2a6-49d7c3e45180" />
 
 <img width="1437" height="793" alt="Screenshot 2026-01-04 at 11 11 54 AM" src="https://github.com/user-attachments/assets/76bf8e33-7f3e-4543-a7e5-0a06b9934421" />
